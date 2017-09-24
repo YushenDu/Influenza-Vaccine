@@ -6,7 +6,7 @@ import glob
 def readframe(aa, pos):
   wtaa  = aa[0]
   mutaa = aa[1]
-  pos   = (pos-7)/3+1 # change with different gene
+  pos   = (pos-11)/3+1 # change with different gene
   return wtaa+str(pos)+mutaa
 
 def adjustmutpos(muts, offset):
@@ -26,14 +26,14 @@ def list2string(l):
   return newl
 
 #READ IN OFFSET FILE
-infile  = open('Fasta/flu2offset','r')
+infile  = open('Fasta/flu3offset','r')
 offsetH = {}
 for line in infile.xreadlines():
   line = line.rstrip().rsplit("\t")
   offsetH[line[0]] = [int(line[1]),int(line[2])]
 infile.close()
 #READ IN BARCODE FILE
-infile   = open('Fasta/BarCode_IFN','r')
+infile   = open('Fasta/BarCode_MC','r')
 barcodes = {}
 pops     = []
 for line in infile.xreadlines():
@@ -55,7 +55,7 @@ for pop in pops:
     WTcount[pop][amp] = 0
 
 ##############################MAIN##################################
-infile = open('tmp_flu4_IFN/AllM','r')
+infile = open('tmp_flu3MC4/AllM','r')
 for line in infile.xreadlines():
   line = line.rstrip().rsplit("\t")
   if line[1] not in barcodes.keys(): continue
@@ -80,15 +80,9 @@ for pop in pops:
   Genotypes.extend(GenotypeH[pop].keys())
 Genotypes = list(set(Genotypes))
 
-#for G in Genotypes:
-#  if G.count('-')==0:
-#    print G
-#  elif G.count('-')==1:
-#    print G
-
 #OUTPUT
 #WTCOUNT AND DEPTH OUTPUT
-outfile = open('result_flu4_IFN_101315/depth','w')
+outfile = open('result_flu3MC4/depth','w')
 outfile.write('pop'+"\t"+'amp'+"\t"+'WTcount'+"\t"+'Depth'+"\n")
 for pop in pops:
   for amp in offsetH.keys():
@@ -96,8 +90,8 @@ for pop in pops:
 outfile.close()
 
 #GENOTYPES
-outfileA = open('result_flu4_IFN_101315/AGenotypes','w')
-outfileS = open('result_flu4_IFN_101315/SGenotypes','w')
+outfileA = open('result_flu3MC4/AGenotypes','w')
+outfileS = open('result_flu3MC4/SGenotypes','w')
 header   = 'Genotype'+"\t"+"\t".join(pops)
 outfileA.write(header+"\n")
 outfileS.write(header+"\n")
@@ -114,24 +108,16 @@ for G in Genotypes:
     outfileS.write(out+"\n")
 outfileA.close()
 outfileS.close()
-'''
-#Double MUTS INFO FILE
-outfileC = open('result/DMut','w')
-header   = ['Pos1','Pos2','Genotype']
-for pop in pops:
-  header.extend([pop, pop+'_WT',pop+'_Dep'])
-outfileC.write("\t".join(header)+"\n")
 
-'''
 #SINGLE MUTS INFO FILE
-outfileC = open('result_flu4_IFN_101315/flu4','w')
+outfileC = open('result_flu3MC4/flu3MC_T4','w')
 header   = ['Pos','Genotype','Frame1','Frame2']
 for pop in pops:
   header.extend([pop, pop+'_WT',pop+'_Dep'])
 outfileC.write("\t".join(header)+"\n")
 
 #READ IN PROTEIN LEVEL DATA
-infile = open('/home/yushendu/RSun/Flu_M/Ref/Allflu_flu4','r')
+infile = open('/home/yushendu/RSun/Flu_M/Ref/Allflu_flu3','r')
 Rframe = {}
 for line in infile.xreadlines():
   array = line.rstrip().rsplit("\t")
@@ -140,9 +126,9 @@ for line in infile.xreadlines():
   Mutaa1 = array[11]
   WTaa2 = array[12]
   Mutaa2 = array[13]
-#  ID = ID.replace('T291A','C291A') # flu4 BpueI silent mutation
-#  ID = ID.replace('T291C','C291T')
-#  ID = ID.replace('T291G','C291G')
+  ID = ID.replace('C682A','G682A')  #silent mutation generated in the gene to get rid of enzyme digestion sites
+  ID = ID.replace('C682T','G682T')
+  ID = ID.replace('C682G','G682C')
   Rframe[ID] = [WTaa1+Mutaa1, WTaa2+Mutaa2]
 infile.close()
 
@@ -150,6 +136,7 @@ infile.close()
 for G in Genotypes:
   if '-' not in G and 'N' not in G:
     pos = int(G[1:-1])
+#    if not Rframe.has_key(G): print G; continue
     F1  = readframe(Rframe[G][0],pos)
     F2  = readframe(Rframe[G][1],8)
     out = [str(pos),G,F1,F2]
@@ -169,26 +156,3 @@ for G in Genotypes:
       outfileC.write("\t".join(out)+"\n")
 outfileC.close()
 
-
-'''
-# double mutation profile #
-for G in Genotypes:
-  if G.count('-')==1 and 'N' not in G :
-    Mut=G.rsplit('-')
-    pos1 = int(Mut[0][1:-1])
-    pos2 = int(Mut[1][1:-1])
-    out = [str(pos1),str(pos2),G]
-    for pop in pops:
-      wtc = 0
-      dep = 0 
-      for amp in offsetH.keys():
-        if pos1 >= offsetH[amp][0] and pos1 <= offsetH[amp][1] and pos2 >= offsetH[amp][0] and pos2 <= offsetH[amp][1]:
-          wtc += WTcount[pop][amp]
-          dep += depthH[pop][amp]
-      if GenotypeH[pop].has_key(G): out.append(str(GenotypeH[pop][G]))
-      else: out.append(str(0))
-      out.append(str(wtc))
-      out.append(str(dep))
-    outfileC.write("\t".join(out)+"\n")
-outfileC.close()
-'''
